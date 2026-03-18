@@ -1,0 +1,4 @@
+clients-awg/
+*.key
+*.bak
+server.env
