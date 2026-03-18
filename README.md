@@ -1,9 +1,16 @@
-# Mihomo + AmneziaWG на Ubuntu
+<p align="center">
+  <img src="https://img.shields.io/badge/AmneziaWG-obfuscated%20VPN-blueviolet?style=for-the-badge" alt="AmneziaWG"/>
+  <img src="https://img.shields.io/badge/Mihomo-smart%20routing-blue?style=for-the-badge" alt="Mihomo"/>
+  <img src="https://img.shields.io/badge/Ubuntu-22.04%20%7C%2024.04-orange?style=for-the-badge" alt="Ubuntu"/>
+</p>
+
+# AWG + Mihomo MultiHost
 
 VPN-сервер с обфускацией и умной маршрутизацией трафика по сервисам.
 
 - **AmneziaWG** — обфусцированный WireGuard, обходит блокировки DPI
 - **Mihomo** — прокси-ядро с правилами: YouTube через один прокси, Telegram через другой, RU-трафик напрямую и т.д.
+- **Один скрипт** — полная установка за 2-5 минут, переустановка с бэкапом, диагностика
 
 ---
 
@@ -27,7 +34,7 @@ ssh root@IP_ВАШЕГО_СЕРВЕРА
 ## Шаг 2. Скачать файлы
 
 ```bash
-git clone https://github.com/YOUR_USER/YOUR_REPO.git /root/awg-mihomo
+git clone https://github.com/trebore/-AWG--Mihomo-MultiHost-.git /root/awg-mihomo
 cd /root/awg-mihomo
 chmod +x install.sh awg-add-client.sh diagnose.sh
 ```
@@ -333,3 +340,55 @@ awg-add-client.sh    — добавление нового клиента
 diagnose.sh          — диагностика сервера (11 проверок)
 README.md            — эта документация
 ```
+
+---
+
+<p align="center">
+  <br>
+  Если проект оказался полезен — можете угостить меня кофе :)
+  <br><br>
+</p>
+
+<table align="center">
+  <tr>
+    <th>Сеть</th>
+    <th>Адрес</th>
+  </tr>
+  <tr>
+    <td><b>BTC</b> (Bitcoin)</td>
+    <td><code>1EynujGimMJY7WWhY85z1YGHEAgNKxweph</code></td>
+  </tr>
+  <tr>
+    <td><b>ETH</b> (Ethereum)</td>
+    <td rowspan="5"><code>0x184c22edd42b295e338e093787c3267599e7d144</code></td>
+  </tr>
+  <tr>
+    <td><b>USDT</b> (ERC-20)</td>
+  </tr>
+  <tr>
+    <td><b>USDT</b> (Polygon)</td>
+  </tr>
+  <tr>
+    <td><b>USDT</b> (BSC / BEP-20)</td>
+  </tr>
+  <tr>
+    <td><b>POL</b> (Polygon)</td>
+  </tr>
+  <tr>
+    <td><b>SOL</b> (Solana)</td>
+    <td><code>9GBnTDz2huTXRjvTEVfLsnsVVVST8w2trBUy6EVziMwd</code></td>
+  </tr>
+  <tr>
+    <td><b>TON</b> (Toncoin)</td>
+    <td><code>UQAF4g2t3tWhVH25YTzAEoUrFqgQqrugXjs5J4Y8p4planBa</code></td>
+  </tr>
+  <tr>
+    <td><b>USDT</b> (TRC-20 / Tron)</td>
+    <td><code>TFZ15F2LkPp8MqJqQHNGEVRTehgDGXJ4gV</code></td>
+  </tr>
+</table>
+
+<p align="center">
+  <br>
+  <sub>Спасибо за поддержку!</sub>
+</p>
