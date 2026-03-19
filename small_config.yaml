@@ -77,6 +77,10 @@ dns:
     - '*.lan'
     - '*.local'
     - 'localhost'
+    # GitHub (curl/apt на сервере)
+    - '+.github.com'
+    - '+.githubusercontent.com'
+    - '+.github.io'
 
     # Системные проверки
     - +.msftconnecttest.com
@@ -127,20 +131,30 @@ proxy-groups:
       - DIRECT
     icon: "https://www.svgrepo.com/show/349511/spotify.svg"
     
-  - name: 'Discord'
+  - name: 'Игры'
     type: select
     use:
       - subscription
     proxies:
       - DIRECT
-    icon: "https://www.svgrepo.com/show/331368/discord-v2.svg"
+    icon: "https://www.svgrepo.com/show/452107/steam.svg"
     
+  - name: 'Лучший Whatsapp'
+    type: url-test
+    url: https://web.whatsapp.com
+    interval: 300
+    tolerance: 50
+    use:
+      - subscription
+    hidden: true
+
   - name: 'Whatsapp'
     type: select
+    proxies:
+      - 'Лучший Whatsapp'
+      - DIRECT
     use:
       - subscription
-    proxies:
-      - DIRECT
     icon: "https://www.svgrepo.com/show/349511/spotify.svg"
     
     
@@ -159,23 +173,6 @@ proxy-groups:
     proxies:
       - DIRECT
     icon: "https://www.svgrepo.com/show/303341/netflix-1-logo.svg"
-    
-  - name: 'Fastly'
-    type: select
-    use:
-      - subscription
-    proxies:
-      - DIRECT
-    icon: "https://www.svgrepo.com/show/353730/fastly.svg"
-    
-  - name: 'Akamai'
-    type: select
-    use:
-      - subscription
-    proxies:
-      - DIRECT
-    icon: "https://www.svgrepo.com/show/353730/fastly.svg"
-    
     
   - name: 'Viber'
     type: select
@@ -217,15 +214,15 @@ proxy-groups:
       - DIRECT
     icon: "https://www.svgrepo.com/show/452121/twitter-1.svg"
     
-  - name: 'Apple'
+  - name: 'Big Tech'
     type: select
     use:
       - subscription
     proxies:
       - DIRECT
-    icon: "https://www.svgrepo.com/show/494227/apple-rounded-border.svg"
+    icon: "https://www.svgrepo.com/show/475656/google-color.svg"
 
-  - name: 'Instagram'
+  - name: 'Meta'
     type: select
     use:
       - subscription
@@ -241,29 +238,6 @@ proxy-groups:
       - DIRECT
     icon: "https://www.svgrepo.com/show/530357/peach.svg"
 
-  - name: 'Google'
-    type: select
-    use:
-      - subscription
-    proxies:
-      - DIRECT
-    icon: "https://www.svgrepo.com/show/475656/google-color.svg"
-    
-  - name: 'Google Play'
-    type: select
-    use:
-      - subscription
-    proxies:
-      - DIRECT
-    icon: "https://www.svgrepo.com/show/353828/google-play-icon.svg"
-    
-  - name: 'Twitch'
-    type: select
-    use:
-      - subscription
-    proxies:
-      - DIRECT
-    icon: "https://www.svgrepo.com/show/448251/twitch.svg"
     
   - name: 'TikTok'
     type: select
@@ -273,13 +247,6 @@ proxy-groups:
       - DIRECT
     icon: "https://www.svgrepo.com/show/349530/tiktok.svg"
 
-  - name: 'Microsoft'
-    type: select
-    use:
-      - subscription
-    proxies:
-      - DIRECT
-    icon: "https://www.svgrepo.com/show/452062/microsoft.svg"
 
   - name: 'GitHub'
     type: select
@@ -289,29 +256,22 @@ proxy-groups:
       - DIRECT
     icon: "https://www.svgrepo.com/show/344880/github.svg"
 
-  - name: 'Tidal'
-    type: select
+  - name: 'Лучший Telegram'
+    type: url-test
+    url: https://web.telegram.org
+    interval: 300
+    tolerance: 50
     use:
       - subscription
-    proxies:
-      - DIRECT
-    icon: "https://www.svgrepo.com/show/504993/tidal.svg"
-    
-  - name: 'Roblox'
-    type: select
-    use:
-      - subscription
-    proxies:
-      - DIRECT
-    icon: "https://www.svgrepo.com/show/443377/brand-roblox.svg"
-    
-    
+    hidden: true
+
   - name: 'Telegram'
     type: select
+    proxies:
+      - 'Лучший Telegram'
+      - DIRECT
     use:
       - subscription
-    proxies:
-      - DIRECT
     icon: "https://www.svgrepo.com/show/354443/telegram.svg"
 
   - name: 'Speedtest'
@@ -331,30 +291,6 @@ proxy-groups:
     icon: "https://www.svgrepo.com/show/448234/linkedin.svg"
     
     
-  - name: 'Amazon'
-    type: select
-    use:
-      - subscription
-    proxies:
-      - DIRECT
-    icon: "https://www.svgrepo.com/show/475634/amazon-color.svg"
-    
-  - name: 'Facebook'
-    type: select
-    use:
-      - subscription
-    proxies:
-      - DIRECT
-    icon: "https://www.svgrepo.com/show/475647/facebook-color.svg"
-    
-  - name: 'other'
-    type: select
-    use:
-      - subscription
-    proxies:
-      - DIRECT
-    icon: "https://www.svgrepo.com/show/12922/growth.svg"
-
   - name: 'RU трафик'
     type: select
     use:
@@ -397,58 +333,30 @@ proxy-groups:
       - DIRECT
     icon: "https://www.svgrepo.com/show/306500/openai.svg"
 
-  - name: 'Steam'
-    type: select
-    use:
-      - subscription
-    proxies:
-      - DIRECT
-    icon: "https://www.svgrepo.com/show/452107/steam.svg"
-
-  - name: 'intel'
-    type: select
-    use:
-      - subscription
-    proxies:
-      - DIRECT
-    icon: "https://www.svgrepo.com/show/349412/intel.svg"
-
   - name: GLOBAL
     type: select
     hidden: true
     proxies:
       - 'YouTube'
-      - 'Google'
-      - 'Google Play'
-      - 'Steam'
-      - 'Microsoft'
+      - 'Big Tech'
+      - 'Игры'
       - 'GitHub'
-      - 'Gemini'  
-      - 'Instagram'
+      - 'Gemini'
+      - 'Meta'
       - 'Linkedin'
-      - 'Facebook'
-      - 'Amazon'
       - 'Grok'
       - '18+'
-      - 'Apple'
       - 'Telegram'
-      - 'Roblox'
-      - 'Fastly'
       - 'Cloudflare'
       - 'Viber'
       - 'Twitter'
-      - 'intel' 
-      - 'Notion' 
+      - 'Notion'
       - 'TikTok'
       - 'Speedtest'
-      - 'Discord'
-      - 'Twitch'
       - 'Whatsapp'
       - 'Netflix'
-      - 'other'
       - 'Spotify'
       - 'OpenAI'
-      - 'Tidal' 
       - 'RU трафик'
       - 'Блокировка рекламы'
       - 'Остальной трафик'
@@ -503,81 +411,44 @@ rules:
   
 
   # ПРАВИЛО №3: Правила для конкретных сервисов
-  - OR,((DOMAIN-SUFFIX,gql.twitch.tv),(DOMAIN-SUFFIX,usher.ttvnw.net)),Twitch
+  - OR,((DOMAIN-SUFFIX,gql.twitch.tv),(DOMAIN-SUFFIX,usher.ttvnw.net)),Игры
   - GEOSITE,openai,OpenAI
-  - RULE-SET,discord,Discord
-  - GEOSITE,tidal,Tidal
+  - RULE-SET,discord,Игры
   - GEOSITE,linkedin,Linkedin
-  - GEOSITE,facebook,Facebook
+  - GEOSITE,facebook,Meta
   - GEOSITE,netflix,Netflix
   - GEOIP,netflix,Netflix
   - GEOSITE,spotify,Spotify
   - GEOSITE,speedtest,Speedtest
   - GEOSITE,ookla-speedtest,Speedtest
   - GEOSITE,category-speedtest,Speedtest 
-  - GEOSITE,instagram,Instagram
-  - GEOSITE,steam,Steam
-  - IP-ASN,714,Apple
-  - GEOSITE,apple,Apple
+  - GEOSITE,instagram,Meta
+  - GEOSITE,steam,Игры
+  - IP-ASN,714,Big Tech
+  - GEOSITE,apple,Big Tech
   - GEOSITE,youtube,YouTube
   - GEOSITE,twitter,Twitter
   - GEOSITE,tiktok,TikTok
-  - GEOSITE,intel,intel
   - GEOSITE,notion,Notion
-  - GEOSITE,google,Google
-  - GEOSITE,google-play,Google Play
+  - GEOSITE,google,Big Tech
+  - GEOSITE,google-play,Big Tech
   - GEOSITE,google-gemini,Gemini
   - GEOSITE,github,GitHub
-  - GEOSITE,microsoft,Microsoft
+  - GEOSITE,microsoft,Big Tech
   - GEOSITE,telegram,Telegram
   - GEOIP,telegram,Telegram
   - DOMAIN-SUFFIX,grok.com,Grok
   
-# CDN Fastly, Amazon
-  - IP-ASN,16509,Amazon
-  - GEOIP,fastly,Fastly
+  - IP-ASN,16509,Big Tech
 
 
-  
-#  CDN Akamai
-  - IP-ASN,12222,Akamai
-  - IP-ASN,16625,Akamai
-  - IP-ASN,16702,Akamai
-  - IP-ASN,17204,Akamai
-  - IP-ASN,17334,Akamai
-  - IP-ASN,18680,Akamai
-  - IP-ASN,18717,Akamai
-  - IP-ASN,20189,Akamai
-  - IP-ASN,20940,Akamai
-  - IP-ASN,21342,Akamai
-  - IP-ASN,22207,Akamai
-  - IP-ASN,22452,Akamai
-  - IP-ASN,23454,Akamai
-  - IP-ASN,23455,Akamai
-  - IP-ASN,23903,Akamai
-  - IP-ASN,24319,Akamai
-  - IP-ASN,26008,Akamai
-  - IP-ASN,31107,Akamai
-  - IP-ASN,31108,Akamai
-  - IP-ASN,31109,Akamai
-  - IP-ASN,31110,Akamai
-  - IP-ASN,31377,Akamai
-  - IP-ASN,32787,Akamai
-  - IP-ASN,33905,Akamai
-  - IP-ASN,34164,Akamai
-  - IP-ASN,34850,Akamai
-  - IP-ASN,35204,Akamai
-  - IP-ASN,35993,Akamai
-  - IP-ASN,35994,Akamai
-  - IP-ASN,36183,Akamai
-  
-  
+
   # Roblox открыть порты xkeen -ap 80,443,49152:65535
-  - AND,((IP-ASN,22697),(DST-PORT,49152-65535)),Roblox
-  - GEOSITE,roblox,Roblox
-  - DOMAIN-SUFFIX,roblox.com,Roblox
-  - DOMAIN-SUFFIX,rbxcdn.com,Roblox
-  - DOMAIN-SUFFIX,rbxinfra.net,Roblox
+  - AND,((IP-ASN,22697),(DST-PORT,49152-65535)),Игры
+  - GEOSITE,roblox,Игры
+  - DOMAIN-SUFFIX,roblox.com,Игры
+  - DOMAIN-SUFFIX,rbxcdn.com,Игры
+  - DOMAIN-SUFFIX,rbxinfra.net,Игры
   
   # Viber
   - GEOSITE,viber,Viber
@@ -591,10 +462,10 @@ rules:
   - IP-ASN,9002,Whatsapp
 
   # SupperCell Открыть порт 9339 xkeen -ap 9339
-  - GEOSITE,supercell,other
-  - DOMAIN-KEYWORD,supercell,other
-  - AND,((IP-ASN,14618),(DST-PORT,9339)),other
-  - AND,((IP-ASN,16509),(DST-PORT,9339)),other
+  - GEOSITE,supercell,Остальной трафик
+  - DOMAIN-KEYWORD,supercell,Остальной трафик
+  - AND,((IP-ASN,14618),(DST-PORT,9339)),Остальной трафик
+  - AND,((IP-ASN,16509),(DST-PORT,9339)),Остальной трафик
 
   # ПРАВИЛО №5: Проверка Ip адреса
   - DOMAIN-SUFFIX,2ip.io,2IP.IO
@@ -616,36 +487,36 @@ rules:
 
 
   # ПРАВИЛО №6: Необходимые сервисы с выбором
-  - DOMAIN-SUFFIX,onlyfans.com,other
-  - DOMAIN-SUFFIX,fansly.com,other
-  - DOMAIN-SUFFIX,patreon.com,other
-  - DOMAIN-SUFFIX,rockblack.su,other
-  - DOMAIN-SUFFIX,rockblack.pro,other
-  - DOMAIN-SUFFIX,rockblack.info,other
+  - DOMAIN-SUFFIX,onlyfans.com,Остальной трафик
+  - DOMAIN-SUFFIX,fansly.com,Остальной трафик
+  - DOMAIN-SUFFIX,patreon.com,Остальной трафик
+  - DOMAIN-SUFFIX,rockblack.su,Остальной трафик
+  - DOMAIN-SUFFIX,rockblack.pro,Остальной трафик
+  - DOMAIN-SUFFIX,rockblack.info,Остальной трафик
   
     # Торрент сайты
-  - DOMAIN-SUFFIX,rutracker.org,other
-  - DOMAIN-SUFFIX,rutor.info,other
-  - DOMAIN-SUFFIX,lostfilm.tv,other
-  - DOMAIN-SUFFIX,nnmclub.to,other
-  - DOMAIN-SUFFIX,kinozal.tv,other
-  - DOMAIN-SUFFIX,fast-torrent.ru,other
-  - DOMAIN-SUFFIX,tapochek.net,other
-  - DOMAIN-SUFFIX,rgfootball.net,other
-  - DOMAIN-SUFFIX,thepiratebay.org,other
-  - DOMAIN-SUFFIX,rarbg.to,other
+  - DOMAIN-SUFFIX,rutracker.org,Остальной трафик
+  - DOMAIN-SUFFIX,rutor.info,Остальной трафик
+  - DOMAIN-SUFFIX,lostfilm.tv,Остальной трафик
+  - DOMAIN-SUFFIX,nnmclub.to,Остальной трафик
+  - DOMAIN-SUFFIX,kinozal.tv,Остальной трафик
+  - DOMAIN-SUFFIX,fast-torrent.ru,Остальной трафик
+  - DOMAIN-SUFFIX,tapochek.net,Остальной трафик
+  - DOMAIN-SUFFIX,rgfootball.net,Остальной трафик
+  - DOMAIN-SUFFIX,thepiratebay.org,Остальной трафик
+  - DOMAIN-SUFFIX,rarbg.to,Остальной трафик
   
   # ПРАВИЛО №7: Необходимые сервисы с выбором 18+
   - GEOSITE,category-porn,18+
   
   # kino.pub  
-  - DOMAIN-SUFFIX,firebase-settings.crashlytics.com,other
-  - DOMAIN-SUFFIX,firebaseinstallations.googleapis.com,other
-  - DOMAIN-SUFFIX,kp-pro.cloud,other
-  - DOMAIN-SUFFIX,firebaseremoteconfigrealtime.googleapis.com,other
-  - DOMAIN-SUFFIX,firebaseremoteconfig.googleapis.com,other
-  - DOMAIN-SUFFIX,cdn32.lol,other
-  - DOMAIN-SUFFIX,kino.pub,other
+  - DOMAIN-SUFFIX,firebase-settings.crashlytics.com,Остальной трафик
+  - DOMAIN-SUFFIX,firebaseinstallations.googleapis.com,Остальной трафик
+  - DOMAIN-SUFFIX,kp-pro.cloud,Остальной трафик
+  - DOMAIN-SUFFIX,firebaseremoteconfigrealtime.googleapis.com,Остальной трафик
+  - DOMAIN-SUFFIX,firebaseremoteconfig.googleapis.com,Остальной трафик
+  - DOMAIN-SUFFIX,cdn32.lol,Остальной трафик
+  - DOMAIN-SUFFIX,kino.pub,Остальной трафик
   
   - IP-ASN,13335,Cloudflare
   
