@@ -89,6 +89,11 @@ dns:
     - +.ntp.org
     - +.time.windows.com
 
+    # GitHub (curl/apt на сервере)
+    - '+.github.com'
+    - '+.githubusercontent.com'
+    - '+.github.io'
+
     # Мобильные сети
     - +.3gppnetwork.org
 
