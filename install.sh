@@ -60,11 +60,13 @@ TUNEOF
 }
 
 choose_config() {
-    echo ""
-    echo "Выберите вариант конфига mihomo:"
-    echo "  1) Full  — все сервисы отдельными группами"
-    echo "  2) Small — объединённые группы (Big Tech, Игры, Meta)"
-    echo ""
+    echo "" >&2
+    echo "Выберите вариант конфига mihomo:" >&2
+    echo "  1) Full  — все сервисы отдельными группами (Apple, Google," >&2
+    echo "     Microsoft, Steam, Discord и т.д. — каждый отдельно)" >&2
+    echo "  2) Small — объединённые группы (Big Tech, Игры, Meta)" >&2
+    echo "     + автовыбор лучшего прокси для Telegram и WhatsApp" >&2
+    echo "" >&2
     read -p "Вариант (1/2): " config_choice
     case $config_choice in
         1) echo "full_config.yaml" ;;
