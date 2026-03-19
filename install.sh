@@ -2,25 +2,266 @@
 set -e
 
 # ============================================================
-# Mihomo + AmneziaWG установка на Ubuntu
+# Mihomo + AmneziaWG — установка и управление
 # ============================================================
 
-# --- НАСТРОЙКИ (измени перед запуском) ---
-MIHOMO_SECRET=$(openssl rand -hex 32)   # Генерируется автоматически
+MIHOMO_DIR="/etc/mihomo"
+AWG_CONF_DIR="/etc/amnezia/amneziawg"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 AWG_PORT=443
 AWG_SUBNET="10.10.0.0/24"
 AWG_SERVER_IP="10.10.0.1"
 AWG_CLIENT_IP="10.10.0.2"
 CLIENT_DNS="10.10.0.1"
-MIHOMO_DIR="/etc/mihomo"
-AWG_CONF_DIR="/etc/amnezia/amneziawg"
 
-# Параметры обфускации AmneziaWG (генерируются случайно при каждой установке)
-JC=$((RANDOM % 9 + 4))          # 4-12
-JMIN=$((RANDOM % 21 + 40))      # 40-60
-JMAX=$((RANDOM % 51 + 70))      # 70-120
-S1=$((RANDOM % 136 + 15))       # 15-150
-S2=$((RANDOM % 136 + 15))       # 15-150
+# ============================================================
+# Вспомогательные функции
+# ============================================================
+
+get_current_secret() {
+    grep '^secret:' "$MIHOMO_DIR/config.yaml" 2>/dev/null | sed 's/.*secret: *"\(.*\)".*/\1/'
+}
+
+get_current_subscription_url() {
+    sed -n '/^proxy-providers:/,/^[^ ]/{/url:/{s/.*url: *"\(.*\)".*/\1/p;q;}}' "$MIHOMO_DIR/config.yaml" 2>/dev/null
+}
+
+get_server_ip() {
+    if [ -f "$AWG_CONF_DIR/server.env" ]; then
+        grep 'SERVER_PUBLIC_IP=' "$AWG_CONF_DIR/server.env" | cut -d= -f2
+    else
+        echo "не определён"
+    fi
+}
+
+apply_config_values() {
+    local config_path="$1"
+    local secret="$2"
+    local sub_url="$3"
+
+    sed -i "s|^secret: .*|secret: \"$secret\"|" "$config_path"
+    sed -i "s|url: .*# <-- Подставляется автоматически при установке|url: \"$sub_url\"|" "$config_path"
+
+    # Добавляем TUN секцию если отсутствует
+    if ! grep -q "^tun:" "$config_path"; then
+        cat >> "$config_path" << 'TUNEOF'
+
+# --- TUN РЕЖИМ (для маршрутизации AWG трафика) ---
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - any:53
+  auto-route: false
+  auto-detect-interface: true
+TUNEOF
+    fi
+}
+
+choose_config() {
+    echo ""
+    echo "Выберите вариант конфига mihomo:"
+    echo "  1) Full  — все сервисы отдельными группами"
+    echo "  2) Small — объединённые группы (Big Tech, Игры, Meta)"
+    echo ""
+    read -p "Вариант (1/2): " config_choice
+    case $config_choice in
+        1) echo "full_config.yaml" ;;
+        2) echo "small_config.yaml" ;;
+        *) echo "small_config.yaml" ;;
+    esac
+}
+
+# ============================================================
+# Проверка: установлена ли система
+# ============================================================
+
+IS_INSTALLED=false
+if systemctl is-active --quiet mihomo 2>/dev/null || \
+   systemctl is-active --quiet awg-quick@awg0 2>/dev/null || \
+   [ -f "$MIHOMO_DIR/config.yaml" ]; then
+    IS_INSTALLED=true
+fi
+
+# ============================================================
+# МЕНЮ УПРАВЛЕНИЯ (при повторном запуске)
+# ============================================================
+
+if [ "$IS_INSTALLED" = true ]; then
+    echo "========================================"
+    echo " AWG + Mihomo — Управление"
+    echo "========================================"
+    echo ""
+    echo "  1) Диагностика"
+    echo "  2) Информация о Mihomo UI"
+    echo "  3) Сменить секрет Mihomo"
+    echo "  4) Редактировать конфиг Mihomo (nano)"
+    echo "  5) Восстановить конфиг из репозитория"
+    echo "  6) Полная переустановка"
+    echo "  0) Выход"
+    echo ""
+    read -p "Выберите пункт: " menu_choice
+
+    case $menu_choice in
+        1)
+            echo ""
+            if [ -f "$SCRIPT_DIR/diagnose.sh" ]; then
+                bash "$SCRIPT_DIR/diagnose.sh"
+            else
+                echo "diagnose.sh не найден в $SCRIPT_DIR"
+            fi
+            exit 0
+            ;;
+        2)
+            SERVER_IP=$(get_server_ip)
+            CURRENT_SECRET=$(get_current_secret)
+            echo ""
+            echo "========================================"
+            echo " Mihomo External UI"
+            echo "========================================"
+            echo "  URL:    http://$SERVER_IP:1995/ui"
+            echo "  Secret: $CURRENT_SECRET"
+            echo "========================================"
+            exit 0
+            ;;
+        3)
+            NEW_SECRET=$(openssl rand -hex 32)
+            read -p "Новый секрет (Enter = сгенерировать автоматически): " USER_SECRET
+            if [ -n "$USER_SECRET" ]; then
+                NEW_SECRET="$USER_SECRET"
+            fi
+            sed -i "s|^secret: .*|secret: \"$NEW_SECRET\"|" "$MIHOMO_DIR/config.yaml"
+            systemctl restart mihomo
+            echo ""
+            echo "Секрет изменён: $NEW_SECRET"
+            echo "Mihomo перезапущен"
+            exit 0
+            ;;
+        4)
+            nano "$MIHOMO_DIR/config.yaml"
+            echo ""
+            read -p "Перезапустить mihomo? (y/n) " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                systemctl restart mihomo
+                echo "Mihomo перезапущен"
+            fi
+            exit 0
+            ;;
+        5)
+            CONFIG_FILE=$(choose_config)
+
+            if [ ! -f "$SCRIPT_DIR/$CONFIG_FILE" ]; then
+                echo "Файл $CONFIG_FILE не найден в $SCRIPT_DIR"
+                exit 1
+            fi
+
+            # Текущие значения
+            CURRENT_SECRET=$(get_current_secret)
+            CURRENT_URL=$(get_current_subscription_url)
+
+            # Секрет
+            echo ""
+            echo "Текущий секрет: $CURRENT_SECRET"
+            read -p "Оставить текущий секрет? (y/n) " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                NEW_SECRET="$CURRENT_SECRET"
+            else
+                NEW_SECRET=$(openssl rand -hex 32)
+                read -p "Новый секрет (Enter = $NEW_SECRET): " USER_SECRET
+                if [ -n "$USER_SECRET" ]; then
+                    NEW_SECRET="$USER_SECRET"
+                fi
+            fi
+
+            # URL подписки
+            echo "Текущий URL подписки: $CURRENT_URL"
+            read -p "Оставить текущий URL? (y/n) " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                NEW_URL="$CURRENT_URL"
+            else
+                read -p "Новый URL подписки: " NEW_URL
+            fi
+
+            # Копируем и применяем
+            cp "$SCRIPT_DIR/$CONFIG_FILE" "$MIHOMO_DIR/config.yaml"
+            apply_config_values "$MIHOMO_DIR/config.yaml" "$NEW_SECRET" "$NEW_URL"
+
+            systemctl restart mihomo
+            echo ""
+            echo "Конфиг восстановлен ($CONFIG_FILE)"
+            echo "Секрет: $NEW_SECRET"
+            echo "Mihomo перезапущен"
+            exit 0
+            ;;
+        6)
+            echo ""
+            echo "Переустановка полностью удалит старые конфиги и ключи."
+            read -p "Продолжить? (y/n) " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then exit 0; fi
+            # Продолжаем ниже к секции очистки и установки
+            ;;
+        0)
+            exit 0
+            ;;
+        *)
+            echo "Неверный выбор"
+            exit 1
+            ;;
+    esac
+
+    # --- Очистка для переустановки (пункт 6) ---
+    echo ""
+    echo "Очистка предыдущей установки..."
+
+    systemctl stop awg-quick@awg0 2>/dev/null || true
+    systemctl disable awg-quick@awg0 2>/dev/null || true
+    systemctl stop wg-quick@wg0 2>/dev/null || true
+    systemctl disable wg-quick@wg0 2>/dev/null || true
+    systemctl stop mihomo 2>/dev/null || true
+    systemctl disable mihomo 2>/dev/null || true
+
+    ip link del awg0 2>/dev/null || true
+    ip link del wg0 2>/dev/null || true
+
+    iptables -t mangle -F PREROUTING 2>/dev/null || true
+    iptables -t nat -F PREROUTING 2>/dev/null || true
+    iptables -t nat -F POSTROUTING 2>/dev/null || true
+    ip rule del fwmark 1 table 100 2>/dev/null || true
+    ip route del local 0.0.0.0/0 dev lo table 100 2>/dev/null || true
+
+    BACKUP_DIR="/root/backup-vpn-$(date +%Y%m%d%H%M%S)"
+    mkdir -p "$BACKUP_DIR"
+    [ -d "$AWG_CONF_DIR" ] && cp -r "$AWG_CONF_DIR" "$BACKUP_DIR/amneziawg" 2>/dev/null || true
+    [ -d "/etc/wireguard" ] && cp -r /etc/wireguard "$BACKUP_DIR/wireguard" 2>/dev/null || true
+    [ -d "$MIHOMO_DIR" ] && cp -r "$MIHOMO_DIR" "$BACKUP_DIR/mihomo" 2>/dev/null || true
+    [ -d "$SCRIPT_DIR/clients-awg" ] && cp -r "$SCRIPT_DIR/clients-awg" "$BACKUP_DIR/clients-awg" 2>/dev/null || true
+    echo "  Бэкап: $BACKUP_DIR"
+
+    rm -rf "$AWG_CONF_DIR"
+    rm -rf "$MIHOMO_DIR"
+    rm -rf "$SCRIPT_DIR/clients-awg"
+    rm -f /etc/systemd/system/mihomo.service
+    systemctl daemon-reload
+
+    echo "  Очистка завершена"
+fi
+
+# ============================================================
+# СВЕЖАЯ УСТАНОВКА
+# ============================================================
+
+# --- Параметры обфускации (генерируются случайно) ---
+MIHOMO_SECRET=$(openssl rand -hex 32)
+JC=$((RANDOM % 9 + 4))
+JMIN=$((RANDOM % 21 + 40))
+JMAX=$((RANDOM % 51 + 70))
+S1=$((RANDOM % 136 + 15))
+S2=$((RANDOM % 136 + 15))
 H1=$(shuf -i 100000000-2000000000 -n 1)
 H2=$(shuf -i 100000000-2000000000 -n 1)
 H3=$(shuf -i 100000000-2000000000 -n 1)
@@ -43,77 +284,21 @@ if [ -z "$SUBSCRIPTION_URL" ]; then
     echo "URL подписки не может быть пустым"
     exit 1
 fi
+
+CONFIG_FILE=$(choose_config)
+
 echo ""
 echo "Внешний IP:     $SERVER_PUBLIC_IP"
 echo "Интерфейс:      $MAIN_IFACE"
 echo "AWG подсеть:    $AWG_SUBNET"
 echo "AWG порт:       $AWG_PORT"
 echo "Mihomo secret:  $MIHOMO_SECRET"
+echo "Конфиг:         $CONFIG_FILE"
 echo "========================================"
 
-# ============================================================
-# Очистка предыдущей установки (если есть)
-# ============================================================
-REINSTALL=false
-
-if systemctl is-active --quiet awg-quick@awg0 2>/dev/null || \
-   systemctl is-active --quiet wg-quick@wg0 2>/dev/null || \
-   systemctl is-active --quiet mihomo 2>/dev/null || \
-   [ -f "$AWG_CONF_DIR/awg0.conf" ] || \
-   [ -f "/etc/wireguard/wg0.conf" ] || \
-   [ -f "$MIHOMO_DIR/config.yaml" ]; then
-    echo ""
-    echo "Обнаружена предыдущая установка!"
-    echo "Переустановка полностью удалит старые конфиги и ключи."
-    read -p "Переустановить? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then exit 0; fi
-    REINSTALL=true
-
-    echo ""
-    echo "Очистка предыдущей установки..."
-
-    # Останавливаем сервисы
-    systemctl stop awg-quick@awg0 2>/dev/null || true
-    systemctl disable awg-quick@awg0 2>/dev/null || true
-    systemctl stop wg-quick@wg0 2>/dev/null || true
-    systemctl disable wg-quick@wg0 2>/dev/null || true
-    systemctl stop mihomo 2>/dev/null || true
-    systemctl disable mihomo 2>/dev/null || true
-
-    # Убираем интерфейсы если остались
-    ip link del awg0 2>/dev/null || true
-    ip link del wg0 2>/dev/null || true
-
-    # Чистим iptables правила
-    iptables -t mangle -F PREROUTING 2>/dev/null || true
-    iptables -t nat -F PREROUTING 2>/dev/null || true
-    iptables -t nat -F POSTROUTING 2>/dev/null || true
-    ip rule del fwmark 1 table 100 2>/dev/null || true
-    ip route del local 0.0.0.0/0 dev lo table 100 2>/dev/null || true
-
-    # Бэкапим старые конфиги
-    BACKUP_DIR="/root/backup-vpn-$(date +%Y%m%d%H%M%S)"
-    mkdir -p "$BACKUP_DIR"
-    [ -d "$AWG_CONF_DIR" ] && cp -r "$AWG_CONF_DIR" "$BACKUP_DIR/amneziawg" 2>/dev/null || true
-    [ -d "/etc/wireguard" ] && cp -r /etc/wireguard "$BACKUP_DIR/wireguard" 2>/dev/null || true
-    [ -d "$MIHOMO_DIR" ] && cp -r "$MIHOMO_DIR" "$BACKUP_DIR/mihomo" 2>/dev/null || true
-    [ -d "$(dirname "$0")/clients-awg" ] && cp -r "$(dirname "$0")/clients-awg" "$BACKUP_DIR/clients-awg" 2>/dev/null || true
-    echo "  Бэкап: $BACKUP_DIR"
-
-    # Удаляем старые конфиги
-    rm -rf "$AWG_CONF_DIR"
-    rm -rf "$MIHOMO_DIR"
-    rm -rf "$(dirname "$0")/clients-awg"
-    rm -f /etc/systemd/system/mihomo.service
-    systemctl daemon-reload
-
-    echo "  Очистка завершена"
-else
-    read -p "Продолжить? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then exit 1; fi
-fi
+read -p "Продолжить? (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then exit 1; fi
 
 # ============================================================
 # 1. Обновление системы и установка зависимостей
@@ -158,37 +343,14 @@ echo "Mihomo версия: $(mihomo -v 2>&1 | head -1)"
 echo "[3/8] Настройка mihomo..."
 mkdir -p "$MIHOMO_DIR"
 
-# config.yaml лежит рядом с install.sh или в родительской папке
-if [ -f "$(dirname "$0")/config.yaml" ]; then
-    cp "$(dirname "$0")/config.yaml" "$MIHOMO_DIR/config.yaml"
-elif [ -f "$(dirname "$0")/../config.yaml" ]; then
-    cp "$(dirname "$0")/../config.yaml" "$MIHOMO_DIR/config.yaml"
+if [ -f "$SCRIPT_DIR/$CONFIG_FILE" ]; then
+    cp "$SCRIPT_DIR/$CONFIG_FILE" "$MIHOMO_DIR/config.yaml"
 else
-    echo "config.yaml не найден рядом с install.sh"
+    echo "$CONFIG_FILE не найден в $SCRIPT_DIR"
     exit 1
 fi
 
-# Подставляем сгенерированный секрет и URL подписки
-sed -i "s|^secret: .*|secret: \"$MIHOMO_SECRET\"|" "$MIHOMO_DIR/config.yaml"
-sed -i "s|url: .*# <-- Подставляется автоматически при установке|url: \"$SUBSCRIPTION_URL\"|" "$MIHOMO_DIR/config.yaml"
-
-# Добавляем tun секцию
-if ! grep -q "^tun:" "$MIHOMO_DIR/config.yaml"; then
-    cat >> "$MIHOMO_DIR/config.yaml" << 'TUNEOF'
-
-# --- TUN РЕЖИМ (для маршрутизации AWG трафика) ---
-tun:
-  enable: true
-  stack: system
-  dns-hijack:
-    - any:53
-  auto-route: false
-  auto-detect-interface: true
-TUNEOF
-    echo "TUN секция добавлена"
-fi
-
-# DNS listen уже 1053 в config.yaml (не конфликтует с systemd-resolved)
+apply_config_values "$MIHOMO_DIR/config.yaml" "$MIHOMO_SECRET" "$SUBSCRIPTION_URL"
 
 # ============================================================
 # 4. Systemd сервис для mihomo
@@ -220,7 +382,6 @@ systemctl enable mihomo
 # ============================================================
 echo "[5/8] Установка AmneziaWG..."
 
-# Включаем deb-src если нет (нужно для DKMS)
 if [ -f /etc/apt/sources.list ] && ! grep -q "^deb-src" /etc/apt/sources.list 2>/dev/null; then
     cp /etc/apt/sources.list /etc/apt/sources.list.bak
     sed -i "s/^# deb-src/deb-src/" /etc/apt/sources.list
@@ -240,21 +401,17 @@ echo "AmneziaWG установлен"
 echo "[6/8] Настройка AmneziaWG..."
 
 mkdir -p "$AWG_CONF_DIR"
-mkdir -p "$(dirname "$0")/clients-awg"
+mkdir -p "$SCRIPT_DIR/clients-awg"
 
-# Сохраняем IP сервера для awg-add-client.sh
 echo "SERVER_PUBLIC_IP=$SERVER_PUBLIC_IP" > "$AWG_CONF_DIR/server.env"
 
-# Генерация ключей сервера
 SERVER_PRIVKEY=$(awg genkey)
 SERVER_PUBKEY=$(echo "$SERVER_PRIVKEY" | awg pubkey)
 echo "$SERVER_PUBKEY" > "$AWG_CONF_DIR/server_public.key"
 
-# Генерация ключей первого клиента
 CLIENT1_PRIVKEY=$(awg genkey)
 CLIENT1_PUBKEY=$(echo "$CLIENT1_PRIVKEY" | awg pubkey)
 
-# Конфиг сервера AmneziaWG
 cat > "$AWG_CONF_DIR/awg0.conf" << EOF
 [Interface]
 Address = $AWG_SERVER_IP/24
@@ -324,7 +481,6 @@ POSTDOWN
 
 chmod +x "$AWG_CONF_DIR/postup.sh" "$AWG_CONF_DIR/postdown.sh"
 
-# Включаем ip_forward на постоянной основе
 echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/99-amneziawg.conf
 echo "net.ipv4.conf.all.route_localnet = 1" >> /etc/sysctl.d/99-amneziawg.conf
 sysctl -p /etc/sysctl.d/99-amneziawg.conf
@@ -334,7 +490,7 @@ sysctl -p /etc/sysctl.d/99-amneziawg.conf
 # ============================================================
 echo "[8/8] Генерация клиентского конфига и запуск..."
 
-cat > "$(dirname "$0")/clients-awg/client1.conf" << EOF
+cat > "$SCRIPT_DIR/clients-awg/client1.conf" << EOF
 [Interface]
 PrivateKey = $CLIENT1_PRIVKEY
 Address = $AWG_CLIENT_IP/32
@@ -357,7 +513,6 @@ AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
 EOF
 
-# Запуск сервисов: сначала mihomo, потом AWG (через systemd)
 systemctl start mihomo
 sleep 2
 systemctl enable --now awg-quick@awg0
@@ -373,15 +528,12 @@ echo ""
 echo "AmneziaWG Endpoint: $SERVER_PUBLIC_IP:$AWG_PORT"
 echo "Обфускация: Jc=$JC S1=$S1 S2=$S2"
 echo ""
-echo "Конфиг клиента: $(dirname "$0")/clients-awg/client1.conf"
+echo "Конфиг клиента: $SCRIPT_DIR/clients-awg/client1.conf"
 echo ""
 echo "Для добавления новых клиентов:"
 echo "  ./awg-add-client.sh client2"
 echo ""
-echo "Настройка клиентов:"
-echo "  Keenetic:      Импорт .conf (Интернет → Другие подключения → WireGuard)"
-echo "  Android/iOS:   AmneziaVPN → импорт .conf"
-echo "  Windows/macOS: AmneziaVPN → импорт .conf"
+echo "Повторный запуск ./install.sh откроет меню управления"
 echo ""
 echo "Диагностика:"
 echo "  ./diagnose.sh"
