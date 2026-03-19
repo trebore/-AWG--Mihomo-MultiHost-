@@ -222,12 +222,23 @@ proxy-groups:
       - DIRECT
     icon: "https://www.svgrepo.com/show/475656/google-color.svg"
 
-  - name: 'Meta'
-    type: select
-    use:
-      - subscription
+  - name: 'Лучший Meta'
+    type: fallback
+    url: https://www.instagram.com
+    interval: 300
     proxies:
       - DIRECT
+    use:
+      - subscription
+    hidden: true
+
+  - name: 'Meta'
+    type: select
+    proxies:
+      - 'Лучший Meta'
+      - DIRECT
+    use:
+      - subscription
     icon: "https://www.svgrepo.com/show/452229/instagram-1.svg"
     
   - name: '18+'
@@ -521,4 +532,4 @@ rules:
   - IP-ASN,13335,Cloudflare
   
   # ПРАВИЛО №7: Весь остальной трафик
-  - MATCH,Остальной трафик
+  - MATCH,Остальной трафикпушим

@@ -225,12 +225,23 @@ proxy-groups:
       - DIRECT
     icon: "https://www.svgrepo.com/show/494227/apple-rounded-border.svg"
 
-  - name: 'Instagram'
-    type: select
-    use:
-      - subscription
+  - name: 'Лучший Instagram'
+    type: fallback
+    url: https://www.instagram.com
+    interval: 300
     proxies:
       - DIRECT
+    use:
+      - subscription
+    hidden: true
+
+  - name: 'Instagram'
+    type: select
+    proxies:
+      - 'Лучший Instagram'
+      - DIRECT
+    use:
+      - subscription
     icon: "https://www.svgrepo.com/show/452229/instagram-1.svg"
     
   - name: '18+'

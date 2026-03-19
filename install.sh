@@ -100,7 +100,8 @@ if [ "$IS_INSTALLED" = true ]; then
     echo "  3) Сменить секрет Mihomo"
     echo "  4) Редактировать конфиг Mihomo (nano)"
     echo "  5) Восстановить конфиг из репозитория"
-    echo "  6) Полная переустановка"
+    echo "  6) Обновить базовые конфиги из GitHub"
+    echo "  7) Полная переустановка"
     echo "  0) Выход"
     echo ""
     read -p "Выберите пункт: " menu_choice
@@ -200,6 +201,19 @@ if [ "$IS_INSTALLED" = true ]; then
             exit 0
             ;;
         6)
+            REPO_RAW="https://raw.githubusercontent.com/trebore/-AWG--Mihomo-MultiHost-/main"
+            echo ""
+            echo "Скачиваю актуальные конфиги из GitHub..."
+            curl -fSL "$REPO_RAW/full_config.yaml" -o "$SCRIPT_DIR/full_config.yaml" && \
+                echo "  ✓ full_config.yaml обновлён"
+            curl -fSL "$REPO_RAW/small_config.yaml" -o "$SCRIPT_DIR/small_config.yaml" && \
+                echo "  ✓ small_config.yaml обновлён"
+            echo ""
+            echo "Базовые конфиги обновлены."
+            echo "Чтобы применить — выберите пункт 5 (Восстановить конфиг)."
+            exit 0
+            ;;
+        7)
             echo ""
             echo "Переустановка полностью удалит старые конфиги и ключи."
             read -p "Продолжить? (y/n) " -n 1 -r
